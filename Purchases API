@@ -1,0 +1,25 @@
+// routes/purchase.js
+const express = require('express');
+const router = express.Router();
+const pool = require('../db');
+const { logAction } = require('../utils/logger');
+
+router.post('/', async (req, res) => {
+  const { base_id, equipment_type_id, quantity } = req.body;
+
+  try {
+    const result = await pool.query(
+      `INSERT INTO purchases(base_id, equipment_type_id, quantity, date)
+       VALUES ($1,$2,$3,NOW()) RETURNING *`,
+      [base_id, equipment_type_id, quantity]
+    );
+
+    await logAction(req.user.id, "PURCHASE", JSON.stringify(result.rows[0]));
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+module.exports = router;
