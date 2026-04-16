@@ -1,0 +1,41 @@
+// routes/dashboard.js
+const express = require('express');
+const router = express.Router();
+const pool = require('../db');
+
+router.get('/', async (req, res) => {
+  const { base_id, equipment_type_id } = req.query;
+
+  try {
+    const result = await pool.query(`
+      SELECT 
+        COALESCE(SUM(p.quantity),0) as purchases,
+        COALESCE(SUM(ti.quantity),0) as transfer_in,
+        COALESCE(SUM(tof.quantity),0) as transfer_out,
+        COALESCE(SUM(a.quantity),0) as assigned,
+        COALESCE(SUM(e.quantity),0) as expended
+      FROM purchases p
+      LEFT JOIN transfers ti ON ti.to_base = $1
+      LEFT JOIN transfers tof ON tof.from_base = $1
+      LEFT JOIN assignments a ON a.base_id = $1
+      LEFT JOIN expenditures e ON e.base_id = $1
+      WHERE p.base_id = $1
+    `, [base_id]);
+
+    const data = result.rows[0];
+
+    const netMovement = data.purchases + data.transfer_in - data.transfer_out;
+    const closing = netMovement - data.assigned - data.expended;
+
+    res.json({
+      ...data,
+      netMovement,
+      closingBalance: closing
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+module.exports = router;
