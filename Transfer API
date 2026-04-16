@@ -1,0 +1,25 @@
+// routes/transfer.js
+const express = require('express');
+const router = express.Router();
+const pool = require('../db');
+const { logAction } = require('../utils/logger');
+
+router.post('/', async (req, res) => {
+  const { from_base, to_base, equipment_type_id, quantity } = req.body;
+
+  try {
+    const result = await pool.query(
+      `INSERT INTO transfers(from_base, to_base, equipment_type_id, quantity, timestamp)
+       VALUES ($1,$2,$3,$4,NOW()) RETURNING *`,
+      [from_base, to_base, equipment_type_id, quantity]
+    );
+
+    await logAction(req.user.id, "TRANSFER", JSON.stringify(result.rows[0]));
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+module.exports = router;
