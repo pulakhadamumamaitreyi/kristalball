@@ -1,0 +1,9 @@
+// utils/logger.js
+const pool = require('../db');
+
+exports.logAction = async (userId, action, details) => {
+  await pool.query(
+    `INSERT INTO audit_logs(user_id, action, details) VALUES($1,$2,$3)`,
+    [userId, action, details]
+  );
+};
