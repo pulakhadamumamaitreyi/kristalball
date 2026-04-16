@@ -1,0 +1,14 @@
+// server.js
+const express = require('express');
+const app = express();
+
+const { verifyToken, authorize } = require('./middleware/auth');
+
+app.use(express.json());
+
+app.use('/purchases', verifyToken, authorize('Admin', 'Logistics'), require('./routes/purchase'));
+app.use('/transfers', verifyToken, authorize('Admin', 'Logistics'), require('./routes/transfer'));
+app.use('/assignments', verifyToken, authorize('Admin', 'Commander'), require('./routes/assignment'));
+app.use('/dashboard', verifyToken, require('./routes/dashboard'));
+
+app.listen(3000, () => console.log("Server running on port 3000"));
